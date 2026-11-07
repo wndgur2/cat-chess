@@ -8,7 +8,7 @@ router.post("/log/browser", (req, res, next) => {
     device.ip = req.ip;
     const Device = mongoDB.model("Device");
     const newDevice = new Device(device);
-    newDevice.save();
+    newDevice.save().catch((error) => console.error(error.message));
 
     res.sendStatus(200);
 });

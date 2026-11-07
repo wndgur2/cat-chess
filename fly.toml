@@ -1,0 +1,21 @@
+# PR preview apps. The app name comes from `--app` in .github/workflows/pr-preview.yml.
+primary_region = "nrt"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  # A static file, because "/" fails on requests without Accept-Language.
+  [[http_service.checks]]
+    method = "GET"
+    path = "/images/favicon.ico"
+    grace_period = "10s"
+    interval = "30s"
+    timeout = "5s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
