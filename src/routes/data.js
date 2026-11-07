@@ -2,14 +2,14 @@ const express = require("express");
 const router = express.Router();
 router.get("/cats", (req, res, next) => {
     const filteredData = filterUnitsByLanguage(
-        require("../modules/constants/cats.json"),
+        require("../game/constants/cats.json"),
         req.cookies.lang
     );
     res.json(filteredData);
 });
 router.get("/creeps", (req, res, next) => {
     const filteredData = filterUnitsByLanguage(
-        require("../modules/constants/creeps.json"),
+        require("../game/constants/creeps.json"),
         req.cookies.lang
     );
     res.json(filteredData);

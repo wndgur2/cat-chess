@@ -10,7 +10,7 @@ async function run() {
     var app = require('../app')
     var debug = require('debug')('catchess:server')
     var http = require('http')
-    var webSocket = require('../modules/socket.js')
+    var webSocket = require('../net/socket.js')
     var port
     var server
 

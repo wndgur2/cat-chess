@@ -1,9 +1,10 @@
 // module
 
-import Painter from './modules/3D/Painter.js'
-import Socket from './modules/Socket.js'
-import UI from './modules/UI.js'
-import Unit from './modules/Unit.js'
+import { handleServerMessage } from './controller/messageHandlers.js'
+import Socket from './net/Socket.js'
+import Unit from './state/Unit.js'
+import Painter from './view/3D/Painter.js'
+import UI from './view/UI.js'
 
 window.onload = () => {
   init()
@@ -16,9 +17,13 @@ async function init() {
     UI.init(false)
     return
   }
-  ;[UI, Socket, Painter].forEach((module) => {
-    module.init()
+  UI.init()
+  Socket.init({
+    onMessage: handleServerMessage,
+    onReady: UI.readyToPlay,
+    onDisconnected: UI.blockPlayBtn,
   })
+  Painter.init()
 }
 
 async function fetchResource() {
