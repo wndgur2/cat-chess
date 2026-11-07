@@ -1,0 +1,83 @@
+name: PR Preview
+
+# Requires the FLY_API_TOKEN secret (`fly tokens create org`).
+# Set the FLY_ORG variable to use an organization other than "personal".
+# Without the secret, and for pull requests from forks, nothing is deployed.
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: pr-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  APP: wndgur2-catchess-pr-${{ github.event.pull_request.number }}
+  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+  FLY_ORG: ${{ vars.FLY_ORG || 'personal' }}
+  GH_TOKEN: ${{ github.token }}
+  PR_NUMBER: ${{ github.event.pull_request.number }}
+
+jobs:
+  deploy:
+    if: github.event.action != 'closed' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for Fly token
+        id: token
+        run: |
+          if [ -n "$FLY_API_TOKEN" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::FLY_API_TOKEN is not set, so no preview was deployed."
+          fi
+
+      - if: steps.token.outputs.present == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - if: steps.token.outputs.present == 'true'
+        uses: superfly/flyctl-actions/setup-flyctl@fc53c09e1bc3be6f54706524e3b82c4f462f77be # 1.5
+
+      - name: Create app
+        if: steps.token.outputs.present == 'true'
+        run: flyctl status --app "$APP" > /dev/null 2>&1 || flyctl apps create "$APP" --org "$FLY_ORG"
+
+      - name: Deploy
+        if: steps.token.outputs.present == 'true'
+        run: flyctl deploy --app "$APP" --remote-only --ha=false --yes
+
+      - name: Comment preview URL
+        if: steps.token.outputs.present == 'true'
+        run: |
+          gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --edit-last --create-if-none \
+            --body "Preview: https://$APP.fly.dev (\`$GITHUB_SHA\`). Guest play only; login and match records are disabled."
+
+  destroy:
+    if: github.event.action == 'closed' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for Fly token
+        id: token
+        run: |
+          if [ -n "$FLY_API_TOKEN" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::FLY_API_TOKEN is not set, so no preview was removed."
+          fi
+
+      - if: steps.token.outputs.present == 'true'
+        uses: superfly/flyctl-actions/setup-flyctl@fc53c09e1bc3be6f54706524e3b82c4f462f77be # 1.5
+
+      - name: Destroy app
+        if: steps.token.outputs.present == 'true'
+        run: |
+          if ! output=$(flyctl apps destroy "$APP" --yes 2>&1); then
+            echo "$output"
+            # A PR with no preview has nothing to remove. Other failures would leave a billed app.
+            grep -q "Could not find App" <<< "$output"
+          fi
