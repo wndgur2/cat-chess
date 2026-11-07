@@ -21,6 +21,7 @@ env:
   FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
   FLY_ORG: ${{ vars.FLY_ORG || 'personal' }}
   GH_TOKEN: ${{ github.token }}
+  HEAD_SHA: ${{ github.event.pull_request.head.sha }}
   PR_NUMBER: ${{ github.event.pull_request.number }}
 
 jobs:
@@ -55,7 +56,7 @@ jobs:
         if: steps.token.outputs.present == 'true'
         run: |
           gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --edit-last --create-if-none \
-            --body "Preview: https://$APP.fly.dev (\`$GITHUB_SHA\`). Guest play only; login and match records are disabled."
+            --body "Preview: https://$APP.fly.dev (\`$HEAD_SHA\`). Guest play only; login and match records are disabled."
 
   destroy:
     if: github.event.action == 'closed' && github.event.pull_request.head.repo.full_name == github.repository
