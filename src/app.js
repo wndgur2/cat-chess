@@ -16,7 +16,7 @@ app.set('views', __dirname + '/../client/views')
 app.set('view options', { compileDebug: false })
 
 const languageMiddleware = (req, res, next) => {
-  let lang = req.headers['accept-language']
+  let lang = req.headers['accept-language'] || ''
   if (lang.includes('ko')) req.lang = 'ko'
   else req.lang = 'en'
   next()

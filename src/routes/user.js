@@ -13,16 +13,36 @@ router.post("/log/browser", (req, res, next) => {
     res.sendStatus(200);
 });
 
-// db apis
-router.get("/init", async (req, res, next) => {
+function getEmail(req) {
     const id_token = req.headers.authorization
-        .split('"id_token":"')[1]
-        .split('"')[0];
-    const email = jwt.decode(id_token).email;
-    console.log(email);
-    const user = await initUser(email);
-    res.json(user);
-});
+        ?.split('"id_token":"')[1]
+        ?.split('"')[0];
+    try {
+        const email = jwt.decode(id_token)?.email;
+        return typeof email === "string" ? email : null;
+    } catch (error) {
+        return null;
+    }
+}
+
+// Express 4 does not catch async rejections, and an unhandled one ends the process.
+function withUser(getUser) {
+    return async (req, res, next) => {
+        const email = getEmail(req);
+        if (!email) return res.sendStatus(401);
+        try {
+            const user = await getUser(email);
+            if (!user) return res.sendStatus(404);
+            res.json(user);
+        } catch (error) {
+            console.error(error.message);
+            res.sendStatus(500);
+        }
+    };
+}
+
+// db apis
+router.get("/init", withUser(initUser));
 
 async function initUser(email) {
     const User = mongoDB.model("User");
@@ -39,29 +59,16 @@ async function initUser(email) {
     return user;
 }
 
-router.put("/win", async (req, res, next) => {
-    const id_token = req.headers.authorization
-        .split('"id_token":"')[1]
-        .split('"')[0];
-    const email = jwt.decode(id_token).email;
-    const user = await updateUser(email, "win");
-    res.json(user);
-});
+router.put("/win", withUser((email) => updateUser(email, "win")));
 
-router.put("/lose", async (req, res, next) => {
-    const id_token = req.headers.authorization
-        .split('"id_token":"')[1]
-        .split('"')[0];
-    const email = jwt.decode(id_token).email;
-    const user = await updateUser(email, "lose");
-    res.json(user);
-});
+router.put("/lose", withUser((email) => updateUser(email, "lose")));
 
 async function updateUser(email, result) {
     const User = mongoDB.model("User");
     let user = await User.findOne({
         email: email,
     });
+    if (!user) return null;
     if (result === "win") {
         user.win++;
     } else {
