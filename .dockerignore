@@ -1,0 +1,8 @@
+.git
+.github
+.env
+.claude
+node_modules
+dist
+client/public/dist
+**/.DS_Store

@@ -42,6 +42,14 @@ CatChess는 브라우저에서 실행되는 실시간 멀티플레이 오토 배
 - **데이터베이스**: MongoDB + Mongoose(User, Device 스키마)
 - **툴링**: Nodemon 스크립트, dotenv 환경 설정, `client/public` 에셋 파이프라인
 
+### PR 프리뷰
+
+PR을 열거나 갱신하면 `.github/workflows/pr-preview.yml`이 Fly.io에 PR 전용 앱을 배포하고 주소를 PR 댓글로 남깁니다. PR을 닫으면 앱을 삭제합니다.
+
+- 저장소 시크릿 `FLY_API_TOKEN`이 필요합니다(`fly tokens create org`). 없으면 배포를 건너뜁니다.
+- 프리뷰에는 DB가 없어 게스트 플레이만 가능하고, 로그인과 전적 저장은 동작하지 않습니다.
+- Fly.io는 무료 티어가 없습니다. 앱은 유휴 시 자동으로 멈추고, 멈춘 동안에는 디스크 비용만 청구됩니다.
+
 ### 아키텍처
 
 ```
